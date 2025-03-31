@@ -1,9 +1,12 @@
 import express from 'express';
 import { poolPromise } from './db.js';
+import productosRoutes from './routes/productos.js'; // Importa las rutas de productos
+import ventasRoutes from './routes/ventas.js'; // Importa las rutas de ventas
 
 const app = express();
 app.use(express.json());
 
+// Ruta base para verificar conexión
 app.get('/', async (req, res) => {
   try {
     const pool = await poolPromise;
@@ -15,10 +18,11 @@ app.get('/', async (req, res) => {
   }
 });
 
-import productosRoutes from './routes/productos.js';
-
+// Usa las rutas de productos
 app.use('/productos', productosRoutes);
 
+// Usa las rutas de ventas
+app.use('/ventas', ventasRoutes);
 
 const PORT = 3000;
 app.listen(PORT, () => {
