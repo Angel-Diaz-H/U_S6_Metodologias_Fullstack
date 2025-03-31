@@ -15,6 +15,11 @@ app.get('/', async (req, res) => {
   }
 });
 
+import productosRoutes from './routes/productos.js';
+
+app.use('/productos', productosRoutes);
+
+
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Servidor escuchando en http://localhost:${PORT}`);
