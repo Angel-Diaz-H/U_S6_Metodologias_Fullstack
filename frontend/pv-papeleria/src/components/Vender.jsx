@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
+import './Vender.css';
 
 const Vender = () => {
   const [productos, setProductos] = useState([]);
   const [venta, setVenta] = useState([]);
-  const [montoPago, setMontoPago] = useState(0);
+  const [montoPago, setMontoPago] = useState('');
+  const [total, setTotal] = useState(0);
+  const [busqueda, setBusqueda] = useState('');
+  const [productoSeleccionado, setProductoSeleccionado] = useState(null);
 
   useEffect(() => {
     const fetchProductos = async () => {
@@ -23,16 +27,51 @@ const Vender = () => {
   }, []);
 
   const agregarProducto = (producto) => {
-    const existe = venta.find((p) => p.id_producto === producto.ID_PRODUCTO);
+    const existe = venta.find((p) => p.ID_PRODUCTO === producto.ID_PRODUCTO);
     if (existe) {
-      existe.cantidad += 1;
+      if (existe.cantidad >= producto.CANTIDAD) {
+        alert('No puedes agregar más productos de los disponibles en inventario.');
+        return;
+      }
+      const nuevaVenta = venta.map((p) =>
+        p.ID_PRODUCTO === producto.ID_PRODUCTO
+          ? { ...p, cantidad: p.cantidad + 1 }
+          : p
+      );
+      setVenta(nuevaVenta);
     } else {
       setVenta([...venta, { ...producto, cantidad: 1 }]);
     }
   };
 
+  const actualizarCantidad = (producto, cantidad) => {
+    if (cantidad < 1 || cantidad > producto.CANTIDAD) {
+      alert('Cantidad inválida.');
+      return;
+    }
+    const nuevaVenta = venta.map((p) =>
+      p.ID_PRODUCTO === producto.ID_PRODUCTO
+        ? { ...p, cantidad: parseInt(cantidad, 10) }
+        : p
+    );
+    setVenta(nuevaVenta);
+  };
+
+  const quitarProducto = (producto) => {
+    setVenta(venta.filter((p) => p.ID_PRODUCTO !== producto.ID_PRODUCTO));
+  };
+
+  const calcularTotal = () => {
+    const total = venta.reduce((acc, p) => acc + p.PRECIO * p.cantidad, 0);
+    setTotal(total.toFixed(2)); // Redondea a 2 decimales
+  };
+
+  useEffect(() => {
+    calcularTotal();
+  }, [venta]);
+
   const handleVenta = async () => {
-    const productosParaEnviar = venta.map(p => ({
+    const productosParaEnviar = venta.map((p) => ({
       id_producto: p.ID_PRODUCTO,
       cantidad: p.cantidad,
     }));
@@ -48,7 +87,7 @@ const Vender = () => {
       if (response.ok) {
         alert(`Venta registrada. Cambio: ${data.cambio}`);
         setVenta([]);
-        setMontoPago(0);
+        setMontoPago('');
       } else {
         alert(data.error);
       }
@@ -57,30 +96,142 @@ const Vender = () => {
     }
   };
 
+  const productosFiltrados = productos.filter((producto) =>
+    producto.NOMBRE.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
   return (
-    <div>
-      <h2>Vender Productos</h2>
-      <div>
-        <h3>Seleccionar Productos</h3>
-        {productos.map(producto => (
-          <div key={producto.ID_PRODUCTO}>
-            <span>{producto.NOMBRE} - ${producto.PRECIO}</span>
-            <button onClick={() => agregarProducto(producto)}>Agregar</button>
+    <div className="vender-container">
+      {/* Encabezado */}
+      <header className="vender-header">
+        <h1 className="vender-title">Vender Productos</h1>
+        <div className="usuario-info">
+          <span>Vendedor: Juan Pérez</span>
+          <button className="btn-cambiar-usuario">Cambiar Usuario</button>
+        </div>
+      </header>
+
+      {/* Contenido principal */}
+      <div className="vender-content">
+        {/* Lista de productos */}
+        <div className="productos-list">
+          <h3>Seleccionar Productos</h3>
+          <input
+            type="text"
+            className="busqueda-input"
+            placeholder="Buscar producto..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
+          <div className="productos-scroll">
+              {productosFiltrados.map((producto) => (
+                  <div key={producto.ID_PRODUCTO} className="producto-item">
+                      <div className="producto-info">
+                          <span>{producto.NOMBRE}</span>
+                          <div className="producto-precio-stock">
+                              <span>Precio: ${producto.PRECIO}</span>
+                              <span>Stock: {producto.CANTIDAD}</span>
+                          </div>
+                      </div>
+                      <div className="producto-botones">
+                          <button className="btn-agregar" onClick={() => agregarProducto(producto)}>
+                              Agregar
+                          </button>
+                          <button className="btn-detalles" onClick={() => setProductoSeleccionado(producto)}>
+                              Detalles
+                          </button>
+                      </div>
+                  </div>
+            ))}
           </div>
-        ))}
+        </div>
+
+        {/* Carrito */}
+        <div className="carrito">
+          <h3>Carrito</h3>
+          {venta.length === 0 ? (
+            <p className="carrito-vacio">El carrito está vacío</p>
+          ) : (
+            <table className="carrito-table">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Precio</th>
+                  <th>Cantidad</th>
+                  <th>Subtotal</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {venta.map((p) => (
+                  <tr key={p.ID_PRODUCTO}>
+                    <td>{p.NOMBRE}</td>
+                    <td>${p.PRECIO}</td>
+                    <td>
+                      <input
+                        type="number"
+                        className="cantidad-input"
+                        value={p.cantidad}
+                        onChange={(e) => actualizarCantidad(p, e.target.value)}
+                      />
+                    </td>
+                    <td>${(p.PRECIO * p.cantidad).toFixed(2)}</td>
+                    <td>
+                      <button className="btn-accion" onClick={() => agregarProducto(p)}>+</button>
+                      <button className="btn-accion" onClick={() => quitarProducto(p)}>-</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
 
-      <h3>Carrito</h3>
-      {venta.map((p, index) => (
-        <div key={index}>
-          {p.NOMBRE} - ${p.PRECIO} x {p.cantidad}
+      {/* Total */}
+      <div className="total-container">
+        <h3>Total: ${total}</h3>
+        <h3>Monto de Pago</h3>
+        <input
+          type="number"
+          className="monto-input"
+          value={montoPago}
+          onChange={(e) => setMontoPago(e.target.value.replace(/\D/, ''))}
+          placeholder="Ingrese el monto de pago"
+        />
+        <div className="botones-container">
+          <button
+            className="btn-finalizar"
+            onClick={handleVenta}
+            disabled={venta.length === 0 || !montoPago || montoPago < total}
+          >
+            Finalizar Venta
+          </button>
+          <button className="btn-limpiar" onClick={() => setVenta([])}>
+            Limpiar Carrito
+          </button>
         </div>
-      ))}
+      </div>
 
-      <h3>Monto de Pago</h3>
-      <input type="number" value={montoPago} onChange={(e) => setMontoPago(parseFloat(e.target.value) || 0)} />
+      {/* Modal de detalles */}
+      {productoSeleccionado && (
+        <div className="modal">
+          <div className="modal-content">
+            <h3>Detalles del Producto</h3>
+            <p><strong>Nombre:</strong> {productoSeleccionado.NOMBRE}</p>
+            <p><strong>Descripción:</strong> {productoSeleccionado.DESCRIPCION}</p>
+            <p><strong>Precio:</strong> ${productoSeleccionado.PRECIO}</p>
+            <p><strong>Cantidad Disponible:</strong> {productoSeleccionado.CANTIDAD}</p>
+            <p><strong>Categoría:</strong> {productoSeleccionado.CATEGORIA}</p>
+            <button onClick={() => setProductoSeleccionado(null)}>Cerrar</button>
+          </div>
+        </div>
+      )}
 
-      <button onClick={handleVenta}>Finalizar Venta</button>
+      {/* Pie de página */}
+      <footer className="footer">
+        <p>© 2025 Papelería Milán. Todos los derechos reservados.</p>
+      </footer>
     </div>
   );
 };

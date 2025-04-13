@@ -1,7 +1,8 @@
 .app-container {
   display: grid;
   grid-template-columns: 250px 1fr; /* Menú lateral y contenido principal */
-  height: 100vh;
+  height: 100vh; /* Asegura que ocupe toda la altura de la pantalla */
+  overflow: hidden; /* Evita el scroll innecesario */
 }
 
 .sidebar {
@@ -19,7 +20,7 @@
 }
 
 .sidebar button {
-  background-color: #007bff;
+  background-color: #8d1a00;
   color: white;
   border: none;
   padding: 0.5rem 1rem;
@@ -29,7 +30,7 @@
 }
 
 .sidebar button:hover {
-  background-color: #0056b3;
+  background-color: #8d1a00;
 }
 
 .main-content {

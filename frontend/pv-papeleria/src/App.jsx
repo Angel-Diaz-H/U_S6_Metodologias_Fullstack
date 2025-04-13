@@ -11,7 +11,7 @@ function App() {
     <div className="app-container">
       {/* Menú lateral */}
       <aside className="sidebar">
-        <h2>Punto de Venta</h2>
+        <h2>Punto de venta</h2>
         <button onClick={() => setView('vender')}>Vender</button>
         <button onClick={() => setView('productos')}>Productos</button>
         <button onClick={() => setView('estadisticas')}>Estadísticas</button>
