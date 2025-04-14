@@ -50,6 +50,22 @@ export const registrarVenta = async (req, res) => {
         `);
     }
 
+    // Actualizar la cantidad de productos
+    for (const producto of productos) {
+      const result = await pool.request()
+        .input('id_producto', producto.id_producto)
+        .query('SELECT CANTIDAD FROM BDPVPAPELERIA.dbo.PRODUCTOS WHERE ID_PRODUCTO = @id_producto');
+      const cantidadActual = result.recordset[0]?.CANTIDAD;
+
+      if (cantidadActual !== undefined) {
+        const nuevaCantidad = cantidadActual - producto.cantidad;
+        await pool.request()
+          .input('id_producto', producto.id_producto)
+          .input('nuevaCantidad', nuevaCantidad)
+          .query('UPDATE BDPVPAPELERIA.dbo.PRODUCTOS SET CANTIDAD = @nuevaCantidad WHERE ID_PRODUCTO = @id_producto');
+      }
+    }
+
     res.status(201).json({ message: 'Venta registrada con éxito', cambio });
   } catch (error) {
     console.error('Error al registrar venta:', error);

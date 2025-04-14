@@ -10,23 +10,30 @@ const Vender = () => {
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
 
   useEffect(() => {
-    const fetchProductos = async () => {
-      try {
-        const response = await fetch('http://localhost:3000/productos/listar');
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} ${response.statusText}`);
-        }
-        const data = await response.json();
-        setProductos(data);
-      } catch (error) {
-        console.error('Error al obtener productos:', error);
-        alert('No se pudieron cargar los productos. Intenta más tarde.');
-      }
-    };
     fetchProductos();
   }, []);
 
+  const fetchProductos = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/productos/listar');
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} ${response.statusText}`);
+      }
+      const data = await response.json();
+      console.log('Productos actualizados:', data); // Log para verificar los datos
+      setProductos(data); // Actualiza el estado con los productos más recientes
+    } catch (error) {
+      console.error('Error al obtener productos:', error);
+      alert('No se pudieron cargar los productos. Intenta más tarde.');
+    }
+  };
+
   const agregarProducto = (producto) => {
+    if (producto.CANTIDAD <= 0) {
+      alert('Este producto no está disponible en inventario.');
+      return;
+    }
+  
     const existe = venta.find((p) => p.ID_PRODUCTO === producto.ID_PRODUCTO);
     if (existe) {
       if (existe.cantidad >= producto.CANTIDAD) {
@@ -58,7 +65,12 @@ const Vender = () => {
   };
 
   const quitarProducto = (producto) => {
-    setVenta(venta.filter((p) => p.ID_PRODUCTO !== producto.ID_PRODUCTO));
+    const nuevaVenta = venta.map((p) =>
+      p.ID_PRODUCTO === producto.ID_PRODUCTO
+        ? { ...p, cantidad: p.cantidad - 1 }
+        : p
+    ).filter((p) => p.cantidad > 0); // Elimina productos con cantidad 0
+    setVenta(nuevaVenta);
   };
 
   const calcularTotal = () => {
@@ -88,6 +100,7 @@ const Vender = () => {
         alert(`Venta registrada. Cambio: ${data.cambio}`);
         setVenta([]);
         setMontoPago('');
+        await fetchProductos(); // Refresca la lista de productos
       } else {
         alert(data.error);
       }
@@ -113,7 +126,7 @@ const Vender = () => {
 
       {/* Contenido principal */}
       <div className="vender-content">
-        {/* Lista de productos */}
+        {/* Lista de productos */} 
         <div className="productos-list">
           <h3>Seleccionar Productos</h3>
           <input
@@ -188,30 +201,37 @@ const Vender = () => {
         </div>
       </div>
 
-      {/* Total */}
-      <div className="total-container">
-        <h3>Total: ${total}</h3>
-        <h3>Monto de Pago</h3>
-        <input
-          type="number"
-          className="monto-input"
-          value={montoPago}
-          onChange={(e) => setMontoPago(e.target.value.replace(/\D/, ''))}
-          placeholder="Ingrese el monto de pago"
-        />
-        <div className="botones-container">
-          <button
-            className="btn-finalizar"
-            onClick={handleVenta}
-            disabled={venta.length === 0 || !montoPago || montoPago < total}
-          >
-            Finalizar Venta
-          </button>
-          <button className="btn-limpiar" onClick={() => setVenta([])}>
-            Limpiar Carrito
-          </button>
-        </div>
+    {/* Total */}
+    <div className="total-container">
+      <h3>Total: ${total}</h3>
+      <h3>Monto de Pago</h3>
+      <input
+        type="number"
+        className="monto-input"
+        value={montoPago}
+        onChange={(e) => {
+          const value = e.target.value;
+          if (value === '' || Number(value) >= 0) {
+            setMontoPago(value === '' ? '' : Number(value)); // Permitir vacío o convertir a número
+          } else {
+            alert('El monto de pago no puede ser negativo.');
+          }
+        }}
+        placeholder="Ingrese el monto de pago"
+      />
+      <div className="botones-container">
+        <button
+          className="btn-finalizar"
+          onClick={handleVenta}
+          disabled={venta.length === 0 || !montoPago || montoPago < total} // Comparación correcta
+        >
+          Finalizar Venta
+        </button>
+        <button className="btn-limpiar" onClick={() => setVenta([])}>
+          Limpiar Carrito
+        </button>
       </div>
+    </div>
 
       {/* Modal de detalles */}
       {productoSeleccionado && (
